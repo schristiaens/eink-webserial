@@ -2,10 +2,10 @@
 task: "Web Serial app that flashes a Waveshare ESP32-S3 1.54in e-paper board and uploads a picture to its screen"
 slug: 20261031-092600_eink-webserial
 project: eink-webserial
-phase: climbing
-progress: 13/15
+phase: complete
+progress: 14/15
 started: 2026-10-31T15:26:00Z
-updated: 2026-10-31T16:31:00Z
+updated: 2026-10-31T18:21:00Z
 principal_stated_goal: "I want to program an ESP32 over web serial. create me a simple app that can upload a picture to the 1.54 inch eink screen on a waveshare esp32-s3 development device."
 ---
 
@@ -48,8 +48,8 @@ A local web page plus Arduino firmware: the page flashes the firmware via esptoo
 - [x] ISC-8: Loading a picture renders the 200×200 dithered preview in the page. — `CDP probe packedBytes 5000, empty overlay hidden; preview viewed`
 - [x] ISC-9: Install flow writes bootloader@0x0, partitions@0x8000, boot_app0@0xe000, app@0x10000 via esptool-js `writeFlash`, then hard-resets. — `offsets match core platform.txt upload recipe; manifest + bins 200 from server`
 - [x] ISC-10: A CLI smoke script sends a test frame over serial and receives `OK` from real hardware. (after: ISC-1) — `smoke.py on V2 board: hello, BUSY, OK 1919 ms`
-- [ ] ISC-11: [DEFERRED-VERIFY: needs board + Steve] On real hardware, a picture sent from the page appears on the e-paper. (after: ISC-9, ISC-10)
-- [ ] ISC-15: [DEFERRED-VERIFY: needs board + Steve] Install firmware in the page flashes a real board and the page auto-reconnects to the uploader. (after: ISC-9)
+- [x] ISC-11: On real hardware, a picture sent from the page appears on the e-paper. (after: ISC-9, ISC-10) — `Steve 2026-10-31: orientation okay, everything working`
+- [ ] ISC-15: [WAIVED, see Decisions] Install firmware in the page flashes a real board and the page auto-reconnects to the uploader. (after: ISC-9)
 - [x] ISC-12: Anti: the page never sends an image frame until the device has identified itself as this firmware. — `app.js:48 + :378 gate on serial.identified; probe sendDisabled true`
 - [x] ISC-13: Anti: no network fetch outside `localhost` at runtime (esptool-js vendored, no CDN). — `rg finds no remote URLs; CDP probe offHostRequests: []`
 - [x] ISC-14: Antecedent (experiential): the preview is computed from the same packed bytes that get sent, so what you see is what the panel shows. — `app.js render() draws packedToRgba(packed); unit test + Python/JS packing identical`
@@ -101,4 +101,6 @@ A local web page plus Arduino firmware: the page flashes the firmware via esptoo
 - 2026-10-31: Floyd–Steinberg switched to serpentine scan after the first screenshot showed a left-edge streak (one-way scan artifact).
 - 2026-10-31: Added a "Use a sample picture" button (+ `?sample`): first-run test without hunting for a file, and lets a headless check fill the preview.
 - 2026-10-31: Board is V2 (8MB flash, esptool flash-id). Full 8MB factory flash backed up to `backup/` (gitignored, sha256 d07bb665…69d5) before the first CLI flash; restore with `esptool write-flash 0 backup/<file>`.
+- 2026-10-31: Steve confirmed the smoke pattern's orientation is correct (filled square top-left) and the page works end to end.
+- 2026-10-31: ISC-15 waived: the board was first flashed from the CLI with the same four images and offsets, and Steve reported everything working. In-browser install wasn't confirmed separately. Reopen if it ever fails.
 - 2026-10-31: Second look skipped: hobby build, not security or publish-bound; correctness rests on host tests plus a hardware smoke run.
