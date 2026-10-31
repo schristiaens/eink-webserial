@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E-ink Uploader</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='5' fill='%232b2b29'/%3E%3Crect x='7' y='7' width='18' height='18' fill='%23e8e6df'/%3E%3Cpath d='M7 21l6-6 4 4 3-3 5 5v4H7z' fill='%231a1a1a'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4f2ec;
+    --surface: #fffdf8;
+    --ink: #1d1d1b;
+    --muted: #6b6a65;
+    --line: #dedbd2;
+    --accent: #2f5bea;
+    --accent-ink: #ffffff;
+    --ok: #1f7a4d;
+    --warn: #9a5800;
+    --err: #b3261e;
+    --bezel: #2b2b29;
+    --paper: #e8e6df;
+    --radius: 12px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514;
+      --surface: #1e1e1c;
+      --ink: #ecebe6;
+      --muted: #9d9b94;
+      --line: #34332f;
+      --accent: #7c9cff;
+      --accent-ink: #10132a;
+      --ok: #5cc493;
+      --warn: #e0a64a;
+      --err: #ff8a80;
+      --bezel: #0b0b0a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1e1e1c; --ink: #ecebe6; --muted: #9d9b94; --line: #34332f;
+    --accent: #7c9cff; --accent-ink: #10132a; --ok: #5cc493; --warn: #e0a64a; --err: #ff8a80;
+    --bezel: #0b0b0a; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 16px 48px; }
+
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .pill {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); font-size: 13px; color: var(--muted); white-space: nowrap;
+  }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .pill[data-tone="ok"] { color: var(--ok); } .pill[data-tone="ok"]::before { background: var(--ok); }
+  .pill[data-tone="warn"] { color: var(--warn); } .pill[data-tone="warn"]::before { background: var(--warn); }
+  .pill[data-tone="err"] { color: var(--err); } .pill[data-tone="err"]::before { background: var(--err); }
+
+  .banner {
+    display: none; padding: 12px 14px; margin-bottom: 20px; border-radius: var(--radius);
+    border: 1px solid var(--err); color: var(--err); background: var(--surface);
+  }
+  .banner.show { display: block; }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start; }
+  @media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } .device-col { order: -1; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 16px;
+  }
+  .card h2 {
+    margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .hint { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+  .hint b { color: var(--ink); font-weight: 600; }
+
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; border-radius: 9px;
+    padding: 9px 16px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); border-color: var(--accent); }
+  button.big { width: 100%; padding: 13px 16px; font-size: 16px; }
+  button:focus-visible, input:focus-visible, select:focus-visible, .drop:focus-within {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  progress { width: 100%; height: 8px; margin-top: 12px; accent-color: var(--accent); }
+  progress[hidden] { display: none; }
+
+  .drop {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    min-height: 96px; padding: 16px; text-align: center; cursor: pointer;
+    border: 1.5px dashed var(--line); border-radius: var(--radius); color: var(--muted);
+  }
+  .drop.over { border-color: var(--accent); color: var(--accent); }
+  .drop strong { color: var(--ink); font-weight: 600; }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .filename { font-size: 13px; overflow-wrap: anywhere; }
+
+  .controls { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px 14px; align-items: center; margin-top: 16px; }
+  .controls label.k { font-size: 13px; color: var(--muted); }
+  .controls select, .controls input[type="range"] { width: 100%; }
+  select {
+    font: inherit; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink);
+  }
+  input[type="range"] { accent-color: var(--accent); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label { padding: 7px 14px; font-size: 14px; cursor: pointer; }
+  .seg input:checked + label { background: var(--ink); color: var(--bg); }
+  .seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .range-row { display: flex; gap: 10px; align-items: center; }
+  .range-row output { min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+  .reset-link { background: none; border: none; padding: 0; color: var(--accent); font-weight: 500; font-size: 13px; }
+
+  .send-status { margin: 10px 0 0; min-height: 1.5em; font-size: 14px; color: var(--muted); }
+  .send-status[data-tone="ok"] { color: var(--ok); }
+  .send-status[data-tone="err"] { color: var(--err); }
+
+  .device-col { position: sticky; top: 24px; }
+  .device {
+    background: var(--bezel); border-radius: 22px; padding: 26px 26px 34px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 30px rgba(0,0,0,0.18);
+  }
+  .screen { position: relative; width: 400px; max-width: calc(100vw - 32px - 52px); aspect-ratio: 1; }
+  .screen canvas {
+    display: block; width: 100%; height: 100%; image-rendering: pixelated;
+    background: var(--paper); border-radius: 3px;
+  }
+  .screen .empty {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    color: #8d8a80; font-size: 14px; pointer-events: none;
+  }
+  .device-caption { margin: 12px 4px 0; font-size: 13px; color: var(--muted); text-align: center; }
+
+  details { margin-top: 8px; }
+  summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+  pre#log {
+    margin: 10px 0 0; padding: 12px; max-height: 220px; overflow: auto; border-radius: 9px;
+    background: var(--bg); border: 1px solid var(--line); font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>E-ink Uploader</h1>
+      <p>Waveshare ESP32-S3-ePaper-1.54 · 200 × 200 · Web Serial</p>
+    </div>
+    <span class="pill" id="status" role="status">Not connected</span>
+  </header>
+
+  <div class="banner" id="unsupported">
+    This browser can't talk to serial ports. Open this page in desktop Chrome or Edge, from <b>127.0.0.1</b> or <b>localhost</b>.
+  </div>
+
+  <div class="grid">
+    <div>
+      <section class="card">
+        <h2>1 · Board</h2>
+        <div class="row">
+          <button class="primary" id="connect">Connect</button>
+          <button id="install">Install firmware</button>
+        </div>
+        <progress id="flash-progress" max="1" value="0" hidden></progress>
+        <p class="hint" id="board-hint">
+          Plug the board in with USB-C. First time? <b>Install firmware</b> puts the uploader on it (about 20 seconds).
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>2 · Picture</h2>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="image/*">
+          <strong>Drop a picture here</strong>
+          <span>or click to choose · or paste with ⌘V</span>
+          <span class="filename" id="filename"></span>
+        </label>
+        <p class="hint">No picture handy? <button class="reset-link" id="sample">Use a sample picture</button></p>
+
+        <div class="controls">
+          <label class="k">Crop</label>
+          <div class="seg" role="radiogroup" aria-label="Crop">
+            <input type="radio" name="fit" id="fit-cover" value="cover" checked><label for="fit-cover">Fill</label>
+            <input type="radio" name="fit" id="fit-contain" value="contain"><label for="fit-contain">Fit</label>
+          </div>
+
+          <label class="k" for="rotate">Rotate</label>
+          <div class="row"><button id="rotate">↻ 90°</button><span class="hint" id="rotation" style="margin:0">0°</span></div>
+
+          <label class="k" for="dither">Dither</label>
+          <select id="dither">
+            <option value="floyd-steinberg">Floyd–Steinberg (photos)</option>
+            <option value="atkinson">Atkinson (crisper, lighter)</option>
+            <option value="threshold">None (logos, text)</option>
+          </select>
+
+          <label class="k" for="brightness">Brightness</label>
+          <div class="range-row"><input type="range" id="brightness" min="-100" max="100" value="0"><output id="brightness-out">0</output></div>
+
+          <label class="k" for="contrast">Contrast</label>
+          <div class="range-row"><input type="range" id="contrast" min="-100" max="100" value="0"><output id="contrast-out">0</output></div>
+
+          <label class="k" for="invert">Invert</label>
+          <div class="row"><input type="checkbox" id="invert"><button class="reset-link" id="reset-adjust">Reset adjustments</button></div>
+        </div>
+      </section>
+
+      <button class="primary big" id="send" disabled>Send to screen</button>
+      <p class="send-status" id="send-status" aria-live="polite"></p>
+
+      <details>
+        <summary>Serial log</summary>
+        <pre id="log"></pre>
+      </details>
+    </div>
+
+    <div class="device-col">
+      <div class="device">
+        <div class="screen">
+          <canvas id="preview" width="200" height="200" aria-label="Panel preview"></canvas>
+          <div class="empty" id="empty">No picture yet</div>
+        </div>
+      </div>
+      <p class="device-caption">Preview: exactly the pixels the panel will show</p>
+    </div>
+  </div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

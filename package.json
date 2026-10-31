@@ -1,0 +1,10 @@
+{
+  "name": "eink-webserial",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "bun serve.ts",
+    "test": "bun test",
+    "build:firmware": "bash scripts/build-firmware.sh"
+  }
+}
