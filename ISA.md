@@ -3,9 +3,9 @@ task: "Web Serial app that flashes a Waveshare ESP32-S3 1.54in e-paper board and
 slug: 20261031-092600_eink-webserial
 project: eink-webserial
 phase: climbing
-progress: 12/15
+progress: 13/15
 started: 2026-10-31T15:26:00Z
-updated: 2026-10-31T15:45:00Z
+updated: 2026-10-31T16:31:00Z
 principal_stated_goal: "I want to program an ESP32 over web serial. create me a simple app that can upload a picture to the 1.54 inch eink screen on a waveshare esp32-s3 development device."
 ---
 
@@ -47,7 +47,7 @@ A local web page plus Arduino firmware: the page flashes the firmware via esptoo
 - [x] ISC-7: Page loads in real Chrome from `localhost` with zero console errors and shows Install, Connect, picture input, preview, and Send. — `WebVerify shot-desktop2.png + shot-mobile.png viewed; CDP probe problems: []`
 - [x] ISC-8: Loading a picture renders the 200×200 dithered preview in the page. — `CDP probe packedBytes 5000, empty overlay hidden; preview viewed`
 - [x] ISC-9: Install flow writes bootloader@0x0, partitions@0x8000, boot_app0@0xe000, app@0x10000 via esptool-js `writeFlash`, then hard-resets. — `offsets match core platform.txt upload recipe; manifest + bins 200 from server`
-- [ ] ISC-10: [DEFERRED-VERIFY: board not plugged in] A CLI smoke script sends a test frame over serial and receives `OK` from real hardware. (after: ISC-1)
+- [x] ISC-10: A CLI smoke script sends a test frame over serial and receives `OK` from real hardware. (after: ISC-1) — `smoke.py on V2 board: hello, BUSY, OK 1919 ms`
 - [ ] ISC-11: [DEFERRED-VERIFY: needs board + Steve] On real hardware, a picture sent from the page appears on the e-paper. (after: ISC-9, ISC-10)
 - [ ] ISC-15: [DEFERRED-VERIFY: needs board + Steve] Install firmware in the page flashes a real board and the page auto-reconnects to the uploader. (after: ISC-9)
 - [x] ISC-12: Anti: the page never sends an image frame until the device has identified itself as this firmware. — `app.js:48 + :378 gate on serial.identified; probe sendDisabled true`
@@ -100,4 +100,5 @@ A local web page plus Arduino firmware: the page flashes the firmware via esptoo
 - 2026-10-31: Serial protocol is a fixed frame (`EPD1` + 5000 bytes + 16-bit sum) with a `?` handshake. A fixed frame needs no length negotiation and makes resync trivial.
 - 2026-10-31: Floyd–Steinberg switched to serpentine scan after the first screenshot showed a left-edge streak (one-way scan artifact).
 - 2026-10-31: Added a "Use a sample picture" button (+ `?sample`): first-run test without hunting for a file, and lets a headless check fill the preview.
+- 2026-10-31: Board is V2 (8MB flash, esptool flash-id). Full 8MB factory flash backed up to `backup/` (gitignored, sha256 d07bb665…69d5) before the first CLI flash; restore with `esptool write-flash 0 backup/<file>`.
 - 2026-10-31: Second look skipped: hobby build, not security or publish-bound; correctness rests on host tests plus a hardware smoke run.
